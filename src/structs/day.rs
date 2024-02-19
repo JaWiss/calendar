@@ -1,7 +1,11 @@
 #[derive(Debug)]
-pub struct day {
-    day: u8,
-    month: String,
-    year: u16
+pub struct Day {
+    pub day: u8,
+    pub month: String,
+    pub year: u16
 }
-
+impl Day {
+    pub fn new(day: u8, month: String, year: u16) -> Day {
+       Day {day, month, year} 
+    }
+}
