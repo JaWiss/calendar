@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use serde::Serialize;
+
+#[derive(Serialize)]
 pub struct Day {
     pub day: u8,
     pub month: String,
