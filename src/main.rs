@@ -39,5 +39,13 @@ fn create_month_file(month: &str) {
 }
 
 fn save_date(date: &Date) {
-    
+    let mut file_path = String::new();
+    file_path.push_str("months/"); 
+    file_path.push_str(find_month(date)); 
+    file_path.push_str(".json"); 
+    // open file and find where the new entry needs to be sorted.
+}
+
+fn find_month(date: &Date) -> &String {
+   &date.month 
 }
