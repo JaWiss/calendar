@@ -1,6 +1,7 @@
 use std::fs::{self, create_dir, File};
 
 mod structs;
+use serde::de::Error;
 use structs::day::Date;
 
 fn main() {
@@ -48,4 +49,14 @@ fn save_date(date: &Date) {
 
 fn find_month(date: &Date) -> &String {
    &date.month 
+}
+
+fn get_file(address: &str) -> File {
+    let mut file = match File::open(address) {
+        Ok(file) => file,
+        Err(err) => {
+            create_month_file(address);
+            File::open(address)
+        }
+    };
 }
