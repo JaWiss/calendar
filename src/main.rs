@@ -1,8 +1,10 @@
-use std::fs::{self, create_dir, File};
+use std::{collections::HashMap, f64::consts, fs::{self, create_dir, File}};
 
 mod structs;
 use serde::de::Error;
 use structs::day::Date;
+
+
 
 fn main() {
     let tag = Date::new(29,"Februar".to_string(),2024, "Essen".to_string());
@@ -25,6 +27,8 @@ fn main() {
         file_name.push_str(".json");
         create_month_file(&file_name);
     }
+    // Überprüfen wo Tag eingeordnet werden muss
+    save_date(&tag);
 }
 
 fn create_month_file(month: &str) {
@@ -42,21 +46,30 @@ fn create_month_file(month: &str) {
 fn save_date(date: &Date) {
     let mut file_path = String::new();
     file_path.push_str("months/"); 
-    file_path.push_str(find_month(date)); 
+    file_path.push_str(translate_month(find_month(date))); 
     file_path.push_str(".json"); 
-    // open file and find where the new entry needs to be sorted.
+    let data = fs::read_to_string(file_path);
+    println!("DATA: {:?}", data);
 }
 
 fn find_month(date: &Date) -> &String {
-   &date.month 
-}
+    println!("MONTH: {}", date.month);
+    &date.month 
 
-fn get_file(address: &str) -> File {
-    let mut file = match File::open(address) {
-        Ok(file) => file,
-        Err(err) => {
-            create_month_file(address);
-            File::open(address)
-        }
-    };
+}
+fn translate_month(month: &str) -> &str{
+    let mut month_translation: HashMap<&str, &str> = HashMap::new();
+    month_translation.insert("Januar", "January");
+    month_translation.insert("Februar", "February");
+    month_translation.insert("März", "March");
+    month_translation.insert("April", "April");
+    month_translation.insert("Mai", "May");
+    month_translation.insert("Juni", "June");
+    month_translation.insert("Juli", "July");
+    month_translation.insert("August", "August");
+    month_translation.insert("September", "September");
+    month_translation.insert("Oktober", "October");
+    month_translation.insert("November", "November");
+    month_translation.insert("Dezember", "December");
+    month_translation[month]
 }
