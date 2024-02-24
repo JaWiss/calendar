@@ -2,9 +2,12 @@ use std::{collections::HashMap, f64::consts, fs::{self, create_dir, File}};
 
 mod structs;
 use serde::de::Error;
+use lazy_static::lazy_static;
 use structs::day::Date;
 
-
+lazy_static! {
+    static ref MONTH_TRANSLATION: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
+}
 
 fn main() {
     let tag = Date::new(29,"Februar".to_string(),2024, "Essen".to_string());
@@ -53,7 +56,6 @@ fn save_date(date: &Date) {
 }
 
 fn find_month(date: &Date) -> &String {
-    println!("MONTH: {}", date.month);
     &date.month 
 
 }
