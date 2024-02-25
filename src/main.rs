@@ -1,16 +1,12 @@
-use std::{collections::HashMap, f64::consts, fs::{self, create_dir, File}};
+use std::{collections::HashMap, f64::consts,io::prelude::*, fs::{self, create_dir, File}};
 
 mod structs;
-use serde::de::Error;
-use lazy_static::lazy_static;
 use structs::day::Date;
 
-lazy_static! {
-    static ref MONTH_TRANSLATION: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
-}
+
 
 fn main() {
-    let tag = Date::new(29,"Februar".to_string(),2024, "Essen".to_string());
+    let tag = Date::new(29, 3, 2024, "Essen".to_string());
     let folder_path = String::from("months");
     let months: [&str; 12] = ["January", "February", "March", "April", "May", 
     "June", "July", "August", "September", "October", "November", "December"];
@@ -30,8 +26,7 @@ fn main() {
         file_name.push_str(".json");
         create_month_file(&file_name);
     }
-    // Überprüfen wo Tag eingeordnet werden muss
-    save_date(&tag);
+    println!("{:?}", save_date(&tag));
 }
 
 fn create_month_file(month: &str) {
@@ -46,32 +41,45 @@ fn create_month_file(month: &str) {
    }
 }
 
-fn save_date(date: &Date) {
-    let mut file_path = String::new();
-    file_path.push_str("months/"); 
-    file_path.push_str(translate_month(find_month(date))); 
-    file_path.push_str(".json"); 
-    let data = fs::read_to_string(file_path);
-    println!("DATA: {:?}", data);
+fn save_date(date: &Date) -> std::io::Result<()>{
+    let file_path: String = get_file_path(date);
+    let mut data = fs::read_to_string(&file_path)?;
+    let mut file = File::create(&file_path)?;
+    data.push_str(&date.convert_to_json());
+    file.write_all(data.as_bytes())?;
+    Ok(())
 }
 
-fn find_month(date: &Date) -> &String {
+fn find_month(date: &Date) -> &u8 {
     &date.month 
 
 }
-fn translate_month(month: &str) -> &str{
-    let mut month_translation: HashMap<&str, &str> = HashMap::new();
-    month_translation.insert("Januar", "January");
-    month_translation.insert("Februar", "February");
-    month_translation.insert("März", "March");
-    month_translation.insert("April", "April");
-    month_translation.insert("Mai", "May");
-    month_translation.insert("Juni", "June");
-    month_translation.insert("Juli", "July");
-    month_translation.insert("August", "August");
-    month_translation.insert("September", "September");
-    month_translation.insert("Oktober", "October");
-    month_translation.insert("November", "November");
-    month_translation.insert("Dezember", "December");
+
+fn get_file_path(date: &Date) -> String {
+    let mut file_path = String::new();
+    file_path.push_str("months/"); 
+    file_path.push_str(translate_month(find_month(date))); 
+    file_path.push_str(".json");
+    file_path
+}
+
+fn translate_month(month: &u8) -> &str{
+    let mut month_translation: HashMap<u8, &str> = HashMap::new();
+    month_translation.insert(1,"January");
+    month_translation.insert(2, "February");
+    month_translation.insert(3, "March");
+    month_translation.insert(4, "April");
+    month_translation.insert(5, "May");
+    month_translation.insert(6, "June");
+    month_translation.insert(7, "July");
+    month_translation.insert(8, "August");
+    month_translation.insert(9, "September");
+    month_translation.insert(10, "October");
+    month_translation.insert(11, "November");
+    month_translation.insert(12, "December");
     month_translation[month]
+}
+
+fn find_closest_date(date: &Date) {
+    
 }
