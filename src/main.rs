@@ -7,6 +7,11 @@ use structs::day::Date;
 
 fn main() {
     let tag = Date::new(29, 3, 2024, "Essen".to_string());
+    create_month_folders();
+    println!("{:?}", save_date(&tag));
+}
+
+fn create_month_folders() {
     let folder_path = String::from("months");
     let months: [&str; 12] = ["January", "February", "March", "April", "May", 
     "June", "July", "August", "September", "October", "November", "December"];
@@ -26,7 +31,6 @@ fn main() {
         file_name.push_str(".json");
         create_month_file(&file_name);
     }
-    println!("{:?}", save_date(&tag));
 }
 
 fn create_month_file(month: &str) {
@@ -52,7 +56,6 @@ fn save_date(date: &Date) -> std::io::Result<()>{
 
 fn find_month(date: &Date) -> &u8 {
     &date.month 
-
 }
 
 fn get_file_path(date: &Date) -> String {
