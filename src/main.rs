@@ -1,5 +1,4 @@
-use std::{collections::HashMap, f64::consts, fmt::Result, fs::{self, create_dir, File}, io::{prelude::*, BufReader}};
-use serde::Deserialize;
+use std::{collections::HashMap, f64::consts, fmt::Result, fs::{self, create_dir, File}, io::{prelude::*, BufReader, ErrorKind}};
 
 mod structs;
 use structs::day::Date;
@@ -9,7 +8,7 @@ use structs::day::Date;
 fn main() {
     let tag = Date::new(29, 3, 2024, "Essen".to_string());
     create_month_folders();
-    println!("{:?}", save_date(&tag));
+//    println!("{:?}", save_date(&tag));
     find_closest_date(&tag);
 }
 
@@ -85,10 +84,27 @@ fn translate_month(month: &u8) -> &str{
     month_translation[month]
 }
 
-fn find_closest_date(date: &Date) -> serde_json::Result<()>{ 
-    let file = File::open(get_file_path(&date))?;
-    let mut reader = BufReader::new(file);
-    let data: Date = serde_json::from_reader(reader)?;
+fn find_closest_date(date: &Date) { 
+    let file_result = File::open(get_file_path(&date));
+    let file = match file_result {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create(get_file_path(&date)) {
+                Ok(fc) => fc,
+                Err(e) => panic!("Problem creating the file: {:?}", e),
+            },
+            other_error => {
+                panic!("Problem opening the file: {:?}", other_error);
+            }
+        }
+    };
+    println!("FILE: {:?}", file);
+    let reader = BufReader::new(file);
+    println!("READER: {:?}", reader);
+    let data_result = serde_json::from_reader(reader);
+    let data = match data_result {
+        Ok(file) => file,
+        Err(error) => panic!("File cannot be converted to JSON: {:?}",error),
+    };
     println!("{:?}", data);
-    Ok(())
 }
