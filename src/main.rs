@@ -1,4 +1,4 @@
-use std::{collections::HashMap, f64::consts,io::prelude::*, fs::{self, create_dir, File}};
+use std::{collections::HashMap, f64::consts, fs::{self, create_dir, File}, io::prelude::*};
 
 mod structs;
 use structs::day::Date;
@@ -84,5 +84,6 @@ fn translate_month(month: &u8) -> &str{
 }
 
 fn find_closest_date(date: &Date) {
-    
+    let mut data = fs::read_to_string(get_file_path(&date));    
+    println!("{:?}",data);
 }
