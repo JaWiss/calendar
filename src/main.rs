@@ -1,4 +1,5 @@
-use std::{collections::HashMap, f64::consts, fs::{self, create_dir, File}, io::prelude::*};
+use std::{collections::HashMap, f64::consts, fmt::Result, fs::{self, create_dir, File}, io::{prelude::*, BufReader}};
+use serde::Deserialize;
 
 mod structs;
 use structs::day::Date;
@@ -9,6 +10,7 @@ fn main() {
     let tag = Date::new(29, 3, 2024, "Essen".to_string());
     create_month_folders();
     println!("{:?}", save_date(&tag));
+    find_closest_date(&tag);
 }
 
 fn create_month_folders() {
@@ -83,7 +85,10 @@ fn translate_month(month: &u8) -> &str{
     month_translation[month]
 }
 
-fn find_closest_date(date: &Date) {
-    let mut data = fs::read_to_string(get_file_path(&date));    
-    println!("{:?}",data);
+fn find_closest_date(date: &Date) -> serde_json::Result<()>{ 
+    let file = File::open(get_file_path(&date))?;
+    let mut reader = BufReader::new(file);
+    let data: Date = serde_json::from_reader(reader)?;
+    println!("{:?}", data);
+    Ok(())
 }

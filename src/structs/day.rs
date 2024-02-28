@@ -1,6 +1,7 @@
 use serde::Serialize;
 use serde_json::{self, to_string_pretty};
 
+#[derive(Debug)]
 #[derive(Serialize)]
 pub struct Date {
     pub day: u8,
