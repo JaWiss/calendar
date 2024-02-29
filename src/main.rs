@@ -39,7 +39,6 @@ fn create_month_file(month: &str) {
        match File::create(&month) {
            Ok(_) => println!("file created"),
            Err(_) => println!("Error while creating file"),
-           
        }
    } else {
        println!("file already exists");
@@ -51,6 +50,7 @@ fn save_date(date: &Date) -> std::io::Result<()>{
     let mut data = fs::read_to_string(&file_path)?;
     let mut file = File::create(&file_path)?;
     data.push_str(&date.convert_to_json());
+    data.push_str(",");
     file.write_all(data.as_bytes())?;
     Ok(())
 }
@@ -98,13 +98,13 @@ fn find_closest_date(date: &Date) {
             }
         }
     };
-    println!("FILE: {:?}", file);
     let reader = BufReader::new(file);
-    println!("READER: {:?}", reader);
     let data_result = serde_json::from_reader(reader);
-    let data = match data_result {
-        Ok(file) => file,
+    let data: Date = match data_result {
+        Ok(date) => date,
         Err(error) => panic!("File cannot be converted to JSON: {:?}",error),
     };
     println!("{:?}", data);
+    // only file with one JSON class can be read, need to use an array of dates instead of single
+    // DAte
 }

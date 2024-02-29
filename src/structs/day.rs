@@ -1,8 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{self, to_string_pretty};
 
-#[derive(Debug)]
-#[derive(Serialize)]
+#[derive(Debug,Serialize,Deserialize)]
 pub struct Date {
     pub day: u8,
     pub month: u8,
