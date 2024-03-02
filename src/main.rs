@@ -6,10 +6,11 @@ use structs::day::Date;
 
 
 fn main() {
-    let tag = Date::new(29, 3, 2024, "Essen".to_string());
+    let tag = Date::new(2, 3, 2024, "Essen".to_string());
     create_month_folders();
-//    println!("{:?}", save_date(&tag));
+   // println!("{:?}", save_date(&tag));
     find_closest_date(&tag);
+    println!("Nächste Termin ist: {:?}",find_closest_date(&tag)); 
 }
 
 fn create_month_folders() {
@@ -50,7 +51,6 @@ fn save_date(date: &Date) -> std::io::Result<()>{
     let mut data = fs::read_to_string(&file_path)?;
     let mut file = File::create(&file_path)?;
     data.push_str(&date.convert_to_json());
-    data.push_str(",");
     file.write_all(data.as_bytes())?;
     Ok(())
 }
@@ -84,8 +84,10 @@ fn translate_month(month: &u8) -> &str{
     month_translation[month]
 }
 
-fn find_closest_date(date: &Date) { 
+fn find_closest_date(date: &Date) -> Date { 
     let file_result = File::open(get_file_path(&date));
+    let mut closest_date: Date = Date::new(1,1,1970,"FEHLER".to_string());
+    let mut min_distance: u16 = 367;
     let file = match file_result {
         Ok(file) => file,
         Err(error) => match error.kind() {
@@ -98,13 +100,27 @@ fn find_closest_date(date: &Date) {
             }
         }
     };
+    let data = read_dates_out_of_json(file);
+    for dates in data {
+       if((dates.day.abs_diff(date.day) as u16) < min_distance) {
+            min_distance = dates.day.abs_diff(date.day) as u16;
+            closest_date = dates; 
+       }
+    }
+    return closest_date;
+}
+
+fn read_dates_out_of_json(file: File) -> Vec<Date>{
     let reader = BufReader::new(file);
-    let data_result = serde_json::from_reader(reader);
-    let data: Date = match data_result {
-        Ok(date) => date,
-        Err(error) => panic!("File cannot be converted to JSON: {:?}",error),
-    };
-    println!("{:?}", data);
-    // only file with one JSON class can be read, need to use an array of dates instead of single
-    // DAte
+    let mut data = Vec::new();
+    let deserializer = serde_json::Deserializer::from_reader(reader);
+    let iterator = deserializer.into_iter::<Date>();
+    for item in iterator {
+        let item_to_be_pushed = match item {
+            Ok(date) => date,
+            Err(error) => panic!("error reading a JSON date: {}", error),
+        };   
+        data.push(item_to_be_pushed);
+    }
+    return data;
 }
