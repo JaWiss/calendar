@@ -67,6 +67,14 @@ fn get_file_path(date: &Date) -> String {
     file_path
 }
 
+fn get_file_path_from_month(month: u8) -> String {
+    let mut file_path = String::new();
+    file_path.push_str("months/"); 
+    file_path.push_str(translate_month(&month)); 
+    file_path.push_str(".json");
+    file_path
+}
+
 fn translate_month(month: &u8) -> &str{
     let mut month_translation: HashMap<u8, &str> = HashMap::new();
     month_translation.insert(1,"January");
@@ -82,6 +90,25 @@ fn translate_month(month: &u8) -> &str{
     month_translation.insert(11, "November");
     month_translation.insert(12, "December");
     month_translation[month]
+}
+
+fn get_month_file(month: u8) -> File {
+    let file_result = File::open(get_file_path_from_month(month));
+    let mut closest_date: Date = Date::new(1,1,1970,"FEHLER".to_string());
+    let mut min_distance: u16 = 367;
+    let file = match file_result {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create(get_file_path_from_month(month)) {
+                Ok(fc) => fc,
+                Err(e) => panic!("Problem creating the file: {:?}", e),
+            },
+            other_error => {
+                panic!("Problem opening the file: {:?}", other_error);
+            }
+        }
+    };
+    return file;
 }
 
 fn find_closest_date(date: &Date) -> Date { 
@@ -110,6 +137,53 @@ fn find_closest_date(date: &Date) -> Date {
     return closest_date;
 }
 
+fn find_closest_date_after(date: &Date, month: &File) -> Date{
+    let mut closest_date: Date = Date::new(1,1,1970,"FEHLER".to_string());
+    let mut min_distance: u16 = 367;
+    let data = read_dates_out_of_json(month);
+    for dates in data {
+       if((dates.day.abs_diff(date.day) as u16) < min_distance && dates.day.abs_diff(date.day) > 0) {
+            min_distance = dates.day.abs_diff(date.day) as u16;
+            closest_date = dates; 
+       }
+    }
+    if closest_date.year == 1970 {
+       let new_month: u8= find_month(date) % 12 + 1;
+       find_closest_date_after(date, &get_month_file(new_month)); 
+    }
+    return closest_date;
+}
+
+fn find_closest_date_before(date: &Date, month: &File) -> Date{
+    let mut closest_date: Date = Date::new(1,1,1970,"FEHLER".to_string());
+    let mut min_distance: u16 = 367;
+    let data = read_dates_out_of_json(month);
+    for dates in data {
+       if((dates.day.abs_diff(date.day) as u16) < min_distance && dates.day.abs_diff(date.day) <= 0) {
+            min_distance = dates.day.abs_diff(date.day) as u16;
+            closest_date = dates; 
+       }
+    }
+    if closest_date.year == 1970 {
+       let new_month: u8= find_month(date) - 2 % 12 + 1;
+       find_closest_date_after(date, &get_month_file(new_month)); 
+    }
+    return closest_date;
+}
+
+fn find_closest_dates_around_date(date: &Date, number_of_dates: u8) {
+    let month_file_before = get_month_file(*find_month(date));
+    let month_file_after = get_month_file(*find_month(date));
+    let mut dates_after: Vec<Date> = Vec::new();  
+    let mut dates_before: Vec<Date> = Vec::new();  
+    dates_before.push(find_closest_date_before(&date, &month_file_before));
+    dates_after.push(find_closest_date_after(&date, &month_file_after));
+    for index in 0..number_of_dates-1 {
+        dates_after.push(find_closest_date_after(&date, &month_file_after));
+        dates_before.push(find_closest_date_before(&date, &month_file_before));
+    }
+}
+// MIT DEM BORROW CHECKER WEGEN FILES ÜBERGEBEN, STREITEN!
 fn read_dates_out_of_json(file: File) -> Vec<Date>{
     let reader = BufReader::new(file);
     let mut data = Vec::new();
