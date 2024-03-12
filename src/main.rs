@@ -2,15 +2,17 @@ use std::{collections::HashMap, f64::consts, fmt::Result, fs::{self, create_dir,
 
 mod structs;
 use structs::day::Date;
-
+use chrono::prelude::*;
 
 
 fn main() {
     let tag = Date::new(2, 3, 2024, "Essen".to_string());
     create_month_folders();
    // println!("{:?}", save_date(&tag));
-    find_closest_date(&tag);
-    println!("Nächste Termin ist: {:?}",find_closest_date(&tag)); 
+    let result = find_closest_dates_around_date(&tag, 4);
+    let dates_before = result.0;
+    let dates_after = result.1;
+    println!("Nächste Termin ist: {:?}, {:?}",dates_before, dates_after); 
 }
 
 fn create_month_folders() {
@@ -137,51 +139,101 @@ fn find_closest_date(date: &Date) -> Date {
     return closest_date;
 }
 
-fn find_closest_date_after(date: &Date, month: &File) -> Date{
+fn calculate_month_distance(month1:u8, month2: u8) -> i16 {
+    let month_duration: [u16; 12] = [31,28,31,30,31,30,31,31,30,31,30,31]; 
+    let mut total_duration: i16 = 0;
+    let mut index = month1;
+    while index != month2 {
+       total_duration += month_duration[(index - 1) as usize] as i16; 
+       index =  index % 12 + 1;
+    }
+    return total_duration;
+}
+
+fn calculate_difference(date1: &Date, date2: &Date) -> i16{
+    let mut total_difference: i16 = 0;
+    total_difference += calculate_month_distance(*find_month(date1), *find_month(date2));
+    total_difference += calculate_day_difference(date1.day, date2.day);
+    return total_difference;
+}
+
+fn calculate_day_difference(day1: u8, day2: u8) -> i16 {
+    return (day2 as i16 - day1 as i16) as i16;
+}   
+
+
+fn find_closest_date_after(date: &Date, month: u8) -> Date{
     let mut closest_date: Date = Date::new(1,1,1970,"FEHLER".to_string());
     let mut min_distance: u16 = 367;
-    let data = read_dates_out_of_json(month);
+    let data = read_dates_out_of_json(get_month_file(month));
     for dates in data {
-       if((dates.day.abs_diff(date.day) as u16) < min_distance && dates.day.abs_diff(date.day) > 0) {
-            min_distance = dates.day.abs_diff(date.day) as u16;
-            closest_date = dates; 
-       }
+        let distance: i16 = calculate_difference(date, &dates);  
+        if (dates.day.abs_diff(date.day) as u16) >= min_distance {
+            continue;
+        }
+        if distance < 0 {
+           continue;
+        }
+        if dates.reason == date.reason && distance == 0 {
+            continue;
+        }
+        min_distance = dates.day.abs_diff(date.day) as u16;
+        closest_date = dates; 
+    }
+    if month as u32 == Local::now().month() - 1 {
+        return closest_date;
     }
     if closest_date.year == 1970 {
-       let new_month: u8= find_month(date) % 12 + 1;
-       find_closest_date_after(date, &get_month_file(new_month)); 
+       let new_month: u8= month % 12 + 1;
+       return find_closest_date_after(date,new_month); 
     }
     return closest_date;
 }
 
-fn find_closest_date_before(date: &Date, month: &File) -> Date{
+// CHange it so it gets all months that are before or after a date and then searches for closest
+// values
+fn find_closest_date_before(date: &Date, month: u8) -> Date{
     let mut closest_date: Date = Date::new(1,1,1970,"FEHLER".to_string());
-    let mut min_distance: u16 = 367;
-    let data = read_dates_out_of_json(month);
+    let mut min_distance: i16 = -367;
+    let data = read_dates_out_of_json(get_month_file(month));
+    println!("DATE: {:?}", date);
     for dates in data {
-       if((dates.day.abs_diff(date.day) as u16) < min_distance && dates.day.abs_diff(date.day) <= 0) {
-            min_distance = dates.day.abs_diff(date.day) as u16;
-            closest_date = dates; 
-       }
+        println!("DATa: {:?}",dates);
+        let distance: i16 = calculate_difference(date, &dates);
+        println!("DISCTANCE: {:?}", distance);
+        if distance < min_distance {
+            continue;
+        }
+        if distance > 0 {
+            continue;
+        }
+        if dates.reason == date.reason && distance == 0 {
+            continue;
+        }
+        min_distance = distance;
+        closest_date = dates;
+    }
+    if month as u32 == (Local::now().month() % 12) + 1{
+        //println!("AM ENDE: {}", month);
+        return closest_date;
     }
     if closest_date.year == 1970 {
-       let new_month: u8= find_month(date) - 2 % 12 + 1;
-       find_closest_date_after(date, &get_month_file(new_month)); 
+       let new_month: u8= month - 2 % 12 + 1;
+       return find_closest_date_after(date, new_month); 
     }
     return closest_date;
 }
 
-fn find_closest_dates_around_date(date: &Date, number_of_dates: u8) {
-    let month_file_before = get_month_file(*find_month(date));
-    let month_file_after = get_month_file(*find_month(date));
+fn find_closest_dates_around_date(date: &Date, number_of_dates: u8) -> (Vec<Date>, Vec<Date>) {
     let mut dates_after: Vec<Date> = Vec::new();  
     let mut dates_before: Vec<Date> = Vec::new();  
-    dates_before.push(find_closest_date_before(&date, &month_file_before));
-    dates_after.push(find_closest_date_after(&date, &month_file_after));
-    for index in 0..number_of_dates-1 {
-        dates_after.push(find_closest_date_after(&date, &month_file_after));
-        dates_before.push(find_closest_date_before(&date, &month_file_before));
+    dates_after.push(find_closest_date_after(&date, *find_month(date)));
+    dates_before.push(find_closest_date_before(&date, *find_month(date)));
+    for i in 0..number_of_dates - 1 {
+        dates_after.push(find_closest_date_after(&dates_after[i as usize], *find_month(date)));
+        dates_before.push(find_closest_date_before(&dates_before[i as usize], *find_month(date)));
     }
+    return (dates_before, dates_after);
 }
 // MIT DEM BORROW CHECKER WEGEN FILES ÜBERGEBEN, STREITEN!
 fn read_dates_out_of_json(file: File) -> Vec<Date>{
